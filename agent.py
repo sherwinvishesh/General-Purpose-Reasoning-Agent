@@ -166,5 +166,57 @@ class ReasoningAgent:
                 continue
             return extract_final_answer(resp)
         return extract_final_answer(last)
+# Technique 6: Decomposition (least-to-most)
+    def decomposition(self, question: str) -> str:
+        decomp_prompt = (
+            f"Question: {question}\n\n"
+            f"Split into 2-3 self-contained sub-questions needed to answer it. "
+            f"Format:\n1. <sub-question>\n2. <sub-question>"
+        )
+        resp = self._call_llm(decomp_prompt, max_tokens=256)
+        subqs = re.findall(r"\d+[.):]\s*(.+?)(?=\n\d+[.):]|\n\n|$)", resp, re.DOTALL)
+        subqs = [s.strip() for s in subqs if s.strip()][:3]
+        if len(subqs) < 2:
+            return self.chain_of_thought(question)
 
+        pairs = []
+        for sub in subqs:
+            if self._remaining() < 2:
+                break
+            try:
+                pairs.append((sub, self.chain_of_thought(sub)))
+            except RuntimeError:
+                break
+        if not pairs:
+            return self.chain_of_thought(question)
+
+        combine_prompt = (
+            f"Original question: {question}\n\n"
+            f"Sub-answers:\n"
+            + "\n".join(f"Q: {q}\nA: {a}" for q, a in pairs)
+            + "\n\nUsing these, answer the original question. "
+              "End with 'Answer: <final>'."
+        )
+        return extract_final_answer(self._call_llm(combine_prompt, max_tokens=512))
+
+    # Technique 7: Tool-Augmented (single-shot with inline tool) 
+    def tool_augmented(self, question: str) -> str:
+        prompt = (
+            f"Question: {question}\n\n"
+            f"Solve it. When you need arithmetic, write exactly one CALC[<expr>] "
+            f"and stop; I will return the result in a follow-up turn. "
+            f"Otherwise, end with 'Answer: <final answer>'."
+        )
+        resp = self._call_llm(prompt, max_tokens=512)
+        m = re.search(r"CALC\[([^\]]+)\]", resp)
+        if m and self._remaining() >= 1:
+            expr = m.group(1).strip()
+            result = self._safe_eval(expr)
+            followup = (
+                f"Prior reasoning:\n{resp}\n\n"
+                f"Tool result: {expr} = {result}\n\n"
+                f"Now finish and end with 'Answer: <final answer>'."
+            )
+            return extract_final_answer(self._call_llm(followup, max_tokens=256))
+        return extract_final_answer(resp)
 
