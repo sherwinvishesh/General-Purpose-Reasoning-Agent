@@ -207,4 +207,12 @@ with:
 
 - **Sherwin Jathanna** 
 - **Sounak Ghosh** 
-- **Kush Sharma** 
+- **Kush Sharma**
+
+## Team and Contributions
+
+| Team Member       | Responsibilities                                                                 |
+|-------------------|----------------------------------------------------------------------------------|
+| **Sherwin Jathanna** | `utils.py` (API transport and answer extraction); `agent.py` - Chain-of-Thought, Self-Consistency, and PAL techniques; `generate_answers.py` initial implementation; final output files (answers JSON, run logs, CSVs); |
+| **Sounak Ghosh**  | `smoke_test.py`; `agent.py` - Tree-of-Thought, Self-Refine, and ReAct techniques; `generate_answers.py` question-handling and answer-saving logic; `README.md`; `.env.example`. |
+| **Kush Sharma** | `REPORT.md`; `agent.py` - `ReasoningAgent` class scaffold, Decomposition and Tool-Augmented techniques; `agent.py` classifier and routing controller; `generate_answers.py` `build_answers` function. |
