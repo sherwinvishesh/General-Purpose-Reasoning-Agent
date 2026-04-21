@@ -33,3 +33,34 @@ class ReasoningAgent:
         if not resp["ok"]:
             raise RuntimeError(f"API error: {resp['error']}")
         return resp["text"] or ""
+
+    # Technique 1: Chain-of-Thought
+    def chain_of_thought(self, question: str, temperature: float = 0.0) -> str:
+        prompt = (
+            f"Question: {question}\n\n"
+            f"Think step by step, then write 'Answer: <final answer>' on its own line."
+        )
+        return extract_final_answer(
+            self._call_llm(prompt, temperature=temperature, max_tokens=1024)
+        )
+
+    # Technique 2: Self-Consistency
+    def self_consistency(self, question: str, num_samples: int = 3) -> str:
+        samples = []
+        for _ in range(num_samples):
+            if self._remaining() < 1:
+                break
+            try:
+                samples.append(self.chain_of_thought(question, temperature=0.7))
+            except RuntimeError:
+                break
+        if not samples:
+            return ""
+        counts = Counter(s.strip().lower() for s in samples if s)
+        if not counts:
+            return samples[0]
+        top, freq = counts.most_common(1)[0]
+        for s in samples:
+            if s.strip().lower() == top:
+                return s
+        return samples[0]
