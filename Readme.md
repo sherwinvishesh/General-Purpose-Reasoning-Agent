@@ -1,4 +1,4 @@
-# CSE 476 Final Project - General-Purpose Reasoning Agent
+# General-Purpose Reasoning Agent (CSE 476 Final Project)
 
 A reasoning agent that answers arbitrary questions using eight inference-time
 techniques, built on the ASU SOL Research Compute LLM endpoint. Submission
@@ -202,12 +202,6 @@ with:
   Tree-of-Thought, Self-Refine, ReAct, Decomposition, Tool-Augmented, and PAL.
 
 
-
-## Team
-
-- **Sherwin Jathanna** 
-- **Sounak Ghosh** 
-- **Kush Sharma**
 
 ## Team and Contributions
 
