@@ -66,7 +66,7 @@ class ReasoningAgent:
         return samples[0]
 
     
-# Technique 3: Tree-of-Thought (shallow BFS) 
+    # Technique 3: Tree-of-Thought (shallow BFS) 
     def tree_of_thought(self, question: str, breadth: int = 2) -> str:
         init_prompt = (
             f"Question: {question}\n\n"
@@ -166,7 +166,7 @@ class ReasoningAgent:
                 continue
             return extract_final_answer(resp)
         return extract_final_answer(last)
-# Technique 6: Decomposition (least-to-most)
+    # Technique 6: Decomposition (least-to-most)
     def decomposition(self, question: str) -> str:
         decomp_prompt = (
             f"Question: {question}\n\n"
@@ -219,4 +219,41 @@ class ReasoningAgent:
             )
             return extract_final_answer(self._call_llm(followup, max_tokens=256))
         return extract_final_answer(resp)
+    #  Technique 8: PAL (Program-Aided Language Model)
+    def pal(self, question: str, timeout_sec: int = 5) -> str:
+        prompt = (
+            f"Question: {question}\n\n"
+            f"Write a short Python snippet that prints the final answer. "
+            f"You may `import math`. Do not use input() or network calls. "
+            f"Output only the code, inside a ```python``` fenced block."
+        )
+        code_resp = self._call_llm(prompt, max_tokens=1024)
+        m = re.search(r"```(?:python)?\s*\n(.*?)```", code_resp, re.DOTALL)
+        code = m.group(1) if m else re.sub(r"```(?:python)?\n?|```", "", code_resp).strip()
+
+        if not code.strip():
+            return ""
+
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w", suffix=".py", delete=False, encoding="utf-8"
+            ) as fp:
+                fp.write(code)
+                tmp_path = fp.name
+            result = subprocess.run(
+                ["python3", tmp_path],
+                capture_output=True, text=True, timeout=timeout_sec,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip().splitlines()[-1].strip()
+        except Exception:
+            pass
+        finally:
+            if tmp_path:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+        return ""
 
